@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>reveal.js - The HTML Presentation Framework</title>
+
+    <meta name="description" content="A framework for easily creating beautiful presentations using HTML">
+    <meta name="author" content="Hakim El Hattab">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="css/reveal.min.css">
+    <link rel="stylesheet" href="css/theme/banno.css" id="theme">
+
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/css/zenburn.css">
+
+    <!-- If the query includes 'print-pdf', use the PDF print sheet -->
+    <script>
+      document.write( '<link rel="stylesheet" href="css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+
+    <div class="reveal">
+      <div class="slides">
+
+        <section>
+          <h2 style="font-size:2.7em"></h2>
+          <h3>An Introduction to Options and Eithers</h3><br>
+          <p>Jonathan Quist - jonathan.quist@banno.com<br>
+          iascala - March 2014</p>
+
+        </section>
+        <section>
+          <section data-markdown>
+            <script type="text/template">
+              ### Null Pointer Exception
+
+              <p>If you have programmed in the past, chances are you've seen this guy before...</p>
+
+            </script>
+          </section>
+          <section>
+            <img width="512" height="512" src="https://scs.senecac.on.ca/~peter.liu/opensource_wtp/problem_box2.JPG">
+          </section>
+          <section>
+            <img width="512" height="512" src="http://crunchify.com/wp-content/uploads/2013/07/Null-Pointer-Exception-Crunchify.jpg">
+          </section>
+          <section>
+            <img width="512" height="512" src="https://i.chzbgr.com/maxW500/5829733888/h6AA0AC0D/">
+          </section>
+        </section>
+
+        <section>
+          <section data-markdown>
+            <script type="text/template">
+              ### Dang Exceptions
+
+              <p> A Null Pointer Exception occurs when you attempt to perform some operation on a null value. In scala there is also a  NoSuchElementException which occurs if you try to access data that isn't there.
+              </p>
+              </script>
+          </section>
+          <section>
+            <h3>Heres an example:</h3>
+            <pre><code data-trim class="scala">
+class Apples
+case object RedApple extends Apples
+case object GreenApple extends Apples
+
+def removeGreenApples(basketOfApples:List[Apples]): List[Apples] =
+  basketOfApples.filterNot(apple => apple == GreenApple)
+
+def eatAnApple(basketOfApples:List[Apples]) =
+  println(basketOfApples.head)
+
+val basketOfApples = List(GreenApple, GreenApple, RedApple, GreenApple, GreenApple)
+eatAnApple(removeGreenApples(basketOfApples))
+            </code></pre>
+            <pre><code data-trim class="scala">
+RedApple
+            </code></pre>
+What happens when our basketOfApples has no red apples in it?
+          </section>
+          <section>
+            <h3>Heres Another:</h3>
+            <pre><code data-trim class="scala">
+case class UserAccount(userId: Int,
+                       lastName: String,
+                       firstName: String,
+                       age: Int)
+
+val users:List[UserAccount] = List(UserAccount(1, "Doe", "John", 18),
+                                   UserAccount(2, "Johnson", "Steve", 22)
+//How can we grab a specific user from this list?
+//What if the user we're looking for doesnt exist?
+            </code></pre>
+
+          </section>
+        </section>
+
+        <section data-markdown>
+          <script type="text/template">
+            ### How can I avoid this?
+
+            * Scala tries to solve the problem by tossing out null all together
+            * Instead it provides its own type for optional values(may or may not be present)
+            * The solution lies in the Option[A] trait
+          </script>
+        </section>
+
+        <section>
+          <section data-markdown>
+            <script type="text/template">
+              ### What is an Option?
+              * Something or
+              * Nothing
+            </script>
+          </section>
+
+          <section data-markdown>
+            <script type="text/template">
+              ### Option[A]
+              <p> Option[A] is simply a container for the type A. If the value of type A exists then Option[A] would be an instance of Some[A]. Otherwise is there is no value then Option[A] would be None. Lets look at some code!</p>
+            </script>
+          </section>
+
+          <section>
+            <pre><code data-trim class="scala">
+val hello: Option[String] = Some("Hello World!")
+val pleaseNoHelloWorld: Option[String] = None
+            </code></pre>
+          </section>
+
+          <section>
+            <pre><code data-trim class="scala">
+case class UserAccount(userId: Int,
+                         lastName: String,
+                         firstName: String,
+                         age: Option[Int])
+
+def getUserById(users: List[UserAccount], userId: Int): Option[UserAccount] = {
+  users.find(user => user.userId == userId)
+}
+
+val users:List[UserAccount] = List(UserAccount(1, "Doe", "John", Some(32)),
+                                   UserAccount(2, "Johnson", "Steve", Some(30)),
+                                   UserAccount(3, "Jon", "Doey", None))
+val user1 = getUserById(users, 1)
+println(user1)
+
+            </code></pre>
+            which will print out
+            <pre><code data-trim class="scala">
+Some(UserAccount(1,Doe,John,Some(32)))
+            </code></pre>
+            <pre><code data-trim class="scala">
+None //if we change the call to getUserById(users, 4)
+            </code></pre>
+          </section>
+        </section>
+
+        <section>
+          <section>
+            Dealing with Options
+            <pre><code data-trim class="scala">
+def displayAge(user: UserAccount) = user.age match {
+  case Some(e) => println(e)
+  case None    => println("No age provided")
+}
+val user1 = UserAccount(1, "Doe", "John", Some(35))
+val user2 = UserAccount(2, "Smith", "Zach", None)
+displayAge(user1)
+displayAge(user2)
+            </code></pre>
+            <pre><code data-trim class="scala">
+35
+None
+            </code></pre>
+            Thats cool, but pattern matching kind of seems like overkill...
+          </section>
+          <section data-state="customevent">
+            <p>
+            <h3>Enter default values<br></h3>
+            <h4>getOrElse[B >: A](default: => B): B</h4>
+            <ul>
+            <li> If Some[A] exists get that, otherwise return the result of evaluating default</li>
+            <li> If user1.age has Something get that</li>
+            <li> If user1.age has Nothing get the String "No age provided"</li.
+              </ul>
+            </p>
+            <pre><code data-trim class="scala">
+println(user1.age.getOrElse("No age provided"))
+            </code></pre>
+          </section>
+        </section>
+        <section>
+          <section data-markdown>
+            <script type="text/template">
+              ## More Cool Stuff
+              * You can map over an option
+              * You can filter an option
+              * You can perform side effects when an Option value is present
+            </script>
+          </section>
+
+          <section>
+            <h2>Mapping over an option</h2>
+             <pre><code data-trim class="scala">
+val user1 = Some(UserAccount(1, "Doe", "John", Some(35)))
+println(user1.map(_.age))
+             </code></pre>
+             <pre><code data-trim class="scala">
+Some(Some(35))
+            </code></pre>
+             -- Our Results --
+             <pre><code data-trim class="scala">
+val user1 = Some(UserAccount(1, "Doe", "John", Some(35)))
+println(user1.flatMap(_.age))
+             </code></pre>
+             <pre><code data-trim class="scala">
+Some(35)
+            </code></pre>
+          </section>
+
+          <section>
+            <h2>Filtering!</h2>
+            <pre><code data-trim class="scala">
+val users:List[UserAccount] = List(UserAccount(1, "Doe", "John", Some(32)),
+                                   UserAccount(2, "Johnson", "Steve", Some(30)),
+                                   UserAccount(3, "Smith", "Tori", None))
+
+println(getUserById(users,1).filter(_.age.isDefined))
+println(getUserById(users,2).filter(_.age.isDefined))
+             </code></pre>
+-- Our Results --
+             <pre><code data-trim class="scala">
+Some(UserAccount(1,Doe,John,Some(32)))
+None
+            </code></pre>
+          </section>
+
+          <section>
+            <h2>Side Effects(if you need 'em)</h2>
+            <pre><code data-trim class="scala">
+val user1 = Some(UserAccount(1, "Doe", "John", Some(35)))
+user1.foreach(e => println(e.age))
+             </code></pre>
+-- Our Results --
+             <pre><code data-trim class="scala">
+Some(35)
+            </code></pre>
+          </section>
+        </section>
+
+       <section>
+         <pre><code data-trim class="scala">
+object AppleSelector {
+  class Apples
+  case object RedApple extends Apples
+  case object GreenApple extends Apples
+
+  def removeGreenApples(basketOfApples:List[Apples]): List[Apples] =
+    basketOfApples.filterNot(apple => apple == GreenApple)
+
+  def selectAnApple(basketOfApples:List[Apples]):Option[Apples] = basketOfApples.headOption
+
+  def eatAnApple(apple: Option[Apples]) =
+    apple.fold(println("There are no edible apples"))(println(_))
+
+  val basketOfApples = List(GreenApple, GreenApple, GreenApple, GreenApple, GreenApple, GreenApple)
+  val basketOfEdibleApples = removeGreenApples(basketOfApples)
+  val appleToEat = selectAnApple(basketOfEdibleApples)
+
+  eatAnApple(appleToEat)
+}
+         </code></pre>
+       </section>
+
+        <section data-markdown>
+          <script type="text/template">
+            ## Eithers
+            When you get an unexpected data type <br>You Either[Handle It, Cry yourself to sleep]
+          </script>
+        </section>
+
+        <section data-markdown>
+          <script type="text/template">
+            ## Either[+A, +B]
+            <p>Eithers hold one of two possible results</p>
+            * Left[+A]
+            * Right[+B]
+
+          </script>
+        </section>
+
+        <section>
+          <section data-markdown>
+            <script type="text/template">
+            ## Basics
+            * Like Option, Either is a container type
+            * It takes two parameter types
+            * Either[A,B] can contain either an instance of A or B
+            </script>
+          </section>
+
+          <section>
+            <h3>Making a method return an Either is Easy</h3>
+            <pre><code data-trim class="scala">
+sealed trait ActionsAgainstUser
+case object MuteUser extends ActionsAgainstUser
+
+def preparePost(message: String):Either[String, ActionsAgainstUser] = {
+  if (message.contains("damn")) Right(WarnUser)
+  else Left(message)
+}
+            </code></pre>
+          </section>
+
+          <section data-markdown>
+            <script type="text/template">
+            ### preparePost will return one of two things
+            * Left[String]
+            * Right[ActionsAgainstUser]
+            </script>
+          </section>
+
+          <section>
+            <h3>Working with Either</h3>
+            <pre><code data-trim class="scala">
+val postAction = preparePost("How are you doing?")
+postAction match {
+  case Left(msg) => println(msg)
+  case Right(MuteUser) => muteUser
+}
+            </code></pre>
+          </section>
+        </section>
+
+        <section data-markdown>
+          <script type="text/template">
+            ## Error Catching
+            <p>Originally Either was used for error handling. An Either used for error handling would look like this: Either[Throwable, Result].</p><br><br><p>However since scala 2.10 try/catch is now recommended for handling errors.</p>
+          </script>
+        </section>
+
+        <section>
+          <pre><code data-trim class="scala">
+object FreedomOfSpeechCensor extends App {
+  def warnUser() = println("This is your warning")
+  def muteUser() = println("No more speaking out!")
+  def banUser() =  println("Ban Hammer!")
+  def imprisonUser() = println("Go Directly to Jail!")
+
+  sealed trait ActionsAgainstUser
+  case object WarnUser extends ActionsAgainstUser
+  case object MuteUser extends ActionsAgainstUser
+  case object BanUser extends ActionsAgainstUser
+  case object ImprisonUser extends ActionsAgainstUser
+
+  def determinePunishment(crime: ActionsAgainstUser) = crime match {
+    case WarnUser => warnUser
+    case MuteUser => muteUser
+    case BanUser => banUser
+    case ImprisonUser => imprisonUser
+  }
+
+  def checkMessage(message: String):Either[String, ActionsAgainstUser] = message match {
+    case msg if msg.contains("damn") => Right(WarnUser)
+    case msg if msg.contains("my opinion") => Right(MuteUser)
+    case msg if msg.contains("I disagree with you") => Right(BanUser)
+    case msg if msg.contains("Han shot second") => Right(ImprisonUser)
+    case msg => Left(msg)
+  }
+
+  val message = checkMessage("damn")
+  message.fold(println(msg), determinePunishment(_))
+}
+          </code></pre>
+        </section>
+
+
+        <section data-markdown>
+          <script type="text/template">
+            # Banno is Hiring Scala Developers!*
+
+            wes.iliff@banno.com zach.cox@banno.com<br>
+            We train Scala developers too!<br>
+            *We're now ProfitStars
+          </script>
+        </section>
+
+      </div>
+    </div>
+
+    <script src="lib/js/head.min.js"></script>
+    <script src="js/reveal.min.js"></script>
+
+    <script>
+
+      // Full list of configuration options available here:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        width: 1024,
+        height: 768,
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+        transition: Reveal.getQueryHash().transition || 'fade', // default/cube/page/concave/zoom/linear/fade/none
+
+        // Optional libraries used to extend on reveal.js
+        dependencies: [
+          { src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+          { src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+          { src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+        ]
+      });
+
+    </script>
+
+  </body>
+</html>
